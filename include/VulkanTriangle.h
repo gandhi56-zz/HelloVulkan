@@ -37,6 +37,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
                                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                     void* pUserData);
 
+
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    bool isComplete() {
+        return graphicsFamily.has_value();
+    }
+};
+
 class VulkanTriangle {
 public:
     void run(){
@@ -50,6 +58,7 @@ private:
     GLFWwindow* window;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
     void initWindow();
     void initVulkan();
@@ -60,6 +69,9 @@ private:
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     bool checkValidationLayerSupport();
     std::vector<const char*> getRequiredExtensions();
+    void pickPhysicalDevice();
+    bool isDeviceSuitable(VkPhysicalDevice device);
+    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 };
 
 
