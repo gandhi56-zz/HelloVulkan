@@ -2,10 +2,20 @@
 // Created by anshil on 2021-02-01.
 //
 
-#include <cstring>
-#include "../include/VulkanTriangle.h"
+#include "VulkanTriangle.h"
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+/**
+ *
+ * @param instance
+ * @param pCreateInfo
+ * @param pAllocator
+ * @param pDebugMessenger
+ * @return
+ */
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+                                      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                      const VkAllocationCallbacks* pAllocator,
+                                      VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -24,12 +34,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
     }
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-    return VK_FALSE;
-}
-
-
+/**
+ * @brief initialize glfw window: set width, height, title and GLFW hints
+ */
 void VulkanTriangle::initWindow() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -37,13 +44,21 @@ void VulkanTriangle::initWindow() {
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
 
+/**
+ * @brief initialize Vulkan graphics device support
+ */
 void VulkanTriangle::initVulkan(){
     createInstance();
     setupDebugMessenger();
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
 }
 
+/**
+ * @brief enable validation layers if running in debug mode,
+ *  define createInfo to create DebugUtilsMessenger
+ */
 void VulkanTriangle::setupDebugMessenger(){
     if (!enableValidationLayers) return;
 
@@ -55,21 +70,37 @@ void VulkanTriangle::setupDebugMessenger(){
     }
 }
 
+/**
+ * @brief create GLFW window surface to render graphics
+ */
+void VulkanTriangle::createSurface(){
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create window surface!");
+}
+
 void VulkanTriangle::mainLoop(){
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
     }
 }
 
+/**
+ * @brief destroy device, surface, vulkan instance, window and terminate program
+ */
 void VulkanTriangle::cleanup(){
+    vkDestroyDevice(device, nullptr);
     if (enableValidationLayers){
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
+/**
+ * @brief define Vulkan app info, create info, get extensions, enable validation layers and create instance
+ */
 void VulkanTriangle::createInstance() {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -95,19 +126,21 @@ void VulkanTriangle::createInstance() {
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
     } else {
         createInfo.enabledLayerCount = 0;
         createInfo.pNext = nullptr;
     }
-
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
 }
 
+/**
+ * @brief populate the fields of the passed in createInfo struct object
+ * @param createInfo
+ */
 void VulkanTriangle::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -116,46 +149,9 @@ void VulkanTriangle::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreat
     createInfo.pfnUserCallback = debugCallback;
 }
 
-
-std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-    if (enableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    return extensions;
-}
-
-bool VulkanTriangle::checkValidationLayerSupport() {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    for (const char* layerName : validationLayers) {
-        bool layerFound = false;
-
-        for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
+/**
+ * @brief enumerate and evaluate available physical devices against the requirements of this application
+ */
 void VulkanTriangle::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -166,10 +162,10 @@ void VulkanTriangle::pickPhysicalDevice() {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-    for (const auto& device : devices){
-        if (isDeviceSuitable(device)){
-            physicalDevice = device;
-            std::cerr << "Found a suitable device!" << std::endl;
+    for (const auto& dev : devices){
+        if (isDeviceSuitable(dev)){
+            physicalDevice = dev;
+            std::cerr << "Found a suitable dev!" << std::endl;
             break;
         }
     }
@@ -180,11 +176,69 @@ void VulkanTriangle::pickPhysicalDevice() {
 
 }
 
+/**
+ * @brief Assuming that the physical device is already initialized, create a logical device.
+ *  define createInfos for each unique queueFamily and the logical device, enable validation
+ *  layers for the logical device and finally create it.
+ */
+void VulkanTriangle::createLogicalDevice() {
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = {
+            indices.graphicsFamily.value(),
+            indices.presentFamily.value()
+    };
+
+
+    float queuePriority = 1.0f;
+    for (uint32_t queueFamily : uniqueQueueFamilies){
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.enabledExtensionCount = 0;
+
+    if (enableValidationLayers) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+    } else {
+        createInfo.enabledLayerCount = 0;
+    }
+
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+        throw std::runtime_error("failed to create logical device!");
+
+    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+}
+
+/**
+ * @brief helper function to check whether a physical device is suitable for running this application or not.
+ * @param device reference to the physical device for check
+ * @return whether or not device is suitable
+ */
 bool VulkanTriangle::isDeviceSuitable(VkPhysicalDevice device){
     QueueFamilyIndices indices = findQueueFamilies(device);
     return indices.isComplete();
 }
 
+/**
+ * @brief Given a physical device, this method finds queue families. For each queue family, its corresponding
+ *  graphics family and present support are determined.
+ * @param device
+ * @return
+ */
 QueueFamilyIndices VulkanTriangle::findQueueFamilies(VkPhysicalDevice device) {
     QueueFamilyIndices indices;
     uint32_t queueFamilyCount = 0;
@@ -198,45 +252,58 @@ QueueFamilyIndices VulkanTriangle::findQueueFamilies(VkPhysicalDevice device) {
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
         }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+        if (presentSupport) indices.presentFamily = i;
+
         if (indices.isComplete()) break;
         i++;
     }
     return indices;
 }
 
-void VulkanTriangle::createLogicalDevice() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-    VkDeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-    queueCreateInfo.queueCount = 1;
-
-    float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
-
-    VkPhysicalDeviceFeatures deviceFeatures{};
-
-    VkDeviceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
-
-    createInfo.pEnabledFeatures = &deviceFeatures;
-
-    createInfo.enabledExtensionCount = 0;
-
+/**
+ * @return vector of required extensions
+ */
+std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     if (enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {
-        createInfo.enabledLayerCount = 0;
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
+    return extensions;
+}
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create logical device!");
+/**
+ * determine whether this machine supports validation layers
+ * @return
+ */
+bool VulkanTriangle::checkValidationLayerSupport() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound)    return false;
     }
+    return true;
+}
 
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    return VK_FALSE;
 }

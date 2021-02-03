@@ -13,6 +13,9 @@
 #include <cstdlib>
 #include <memory>
 #include <vector>
+#include <cstring>
+#include <set>
+
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -40,8 +43,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
     bool isComplete() {
-        return graphicsFamily.has_value();
+        return graphicsFamily.has_value() and
+            presentFamily.has_value();
     }
 };
 
@@ -61,6 +66,8 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
     VkQueue graphicsQueue;
+    VkQueue presentQueue;
+    VkSurfaceKHR surface;
 
     void initWindow();
     void initVulkan();
@@ -73,8 +80,9 @@ private:
     std::vector<const char*> getRequiredExtensions();
     void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     void createLogicalDevice();
+    void createSurface();
 };
 
 
