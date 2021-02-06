@@ -79,6 +79,8 @@ private:
   VkFormat swapChainImageFormat;
   VkExtent2D swapChainExtent;
 
+  std::vector<VkImageView> swapChainImageViews;
+
   void initWindow();
   void initVulkan();
   void mainLoop();
@@ -99,7 +101,7 @@ private:
   VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-
+  void createImageViews();
 };
 
 
