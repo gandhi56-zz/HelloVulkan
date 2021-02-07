@@ -102,6 +102,8 @@ private:
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
   void createImageViews();
+  void createGraphicsPipeline();
+  VkShaderModule createShaderModule(const std::vector<char>& code);
 };
 
 
