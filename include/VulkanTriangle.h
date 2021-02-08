@@ -85,6 +85,13 @@ private:
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
 
+  std::vector<VkFramebuffer> swapChainFramebuffers;
+  VkCommandPool commandPool;
+  std::vector<VkCommandBuffer> commandBuffers;
+
+  VkSemaphore imageAvailableSemaphore;
+  VkSemaphore renderFinishedSemaphore;
+
   void initWindow();
   void initVulkan();
   void mainLoop();
@@ -109,6 +116,11 @@ private:
   void createGraphicsPipeline();
   VkShaderModule createShaderModule(const std::vector<char>& code);
   void createRenderPass();
+  void createFramebuffers();
+  void createCommandPool();
+  void createCommandBuffers();
+  void drawFrame();
+  void createSemaphores();
 };
 
 
