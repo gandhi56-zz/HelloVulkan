@@ -95,6 +95,8 @@ private:
   std::vector<VkFence> imagesInFlight;
   size_t currentFrame = 0;
 
+  bool framebufferResized = false;
+
   void initWindow();
   void initVulkan();
   void mainLoop();
@@ -124,6 +126,9 @@ private:
   void createCommandBuffers();
   void drawFrame();
   void createSyncObjects();
+  void recreateSwapChain();
+  void cleanupSwapChain();
+  static void framebufferResizeCallback(GLFWwindow* window, int width , int height);
 };
 
 
