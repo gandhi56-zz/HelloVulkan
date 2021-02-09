@@ -5,10 +5,10 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-#include "VulkanTriangle.h"
+#include "VulkanAppBase.h"
 
 int main() {
-    VulkanTriangle triangle;
+  VulkanAppBase triangle;
     try{
         triangle.run();
     }catch (const std::exception& e){

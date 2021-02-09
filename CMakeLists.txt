@@ -9,6 +9,6 @@ find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
 include_directories(include)
-add_executable(HelloVulkan src/main.cpp src/VulkanTriangle.cpp)
+add_executable(HelloVulkan src/main.cpp src/VulkanAppBase.cpp)
 
 target_link_libraries(HelloVulkan glfw OpenGL::GL vulkan)

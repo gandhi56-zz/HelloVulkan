@@ -2,9 +2,14 @@
 // Created by anshil on 2021-02-01.
 //
 
-#include "VulkanTriangle.h"
+#include "VulkanAppBase.h"
 #include <fstream>
 
+/**
+ * @brief read bytes from file and return a vector of bytes
+ * @param filename path to file
+ * @return vector of bytes
+ */
 static std::vector<char> readFile(const std::string& filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
@@ -19,6 +24,14 @@ static std::vector<char> readFile(const std::string& filename) {
   return buffer;
 }
 
+/**
+ * @brief create debug utils messenger extension
+ * @param instance
+ * @param pCreateInfo
+ * @param pAllocator
+ * @param pDebugMessenger
+ * @return status of the creation
+ */
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo, const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) {
   auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
   if (func != nullptr) {
@@ -28,7 +41,12 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
   }
 }
 
-
+/**
+ * @brief destroy debug utils messenger
+ * @param instance
+ * @param debugMessenger
+ * @param pAllocator
+ */
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
   if (func != nullptr) {
@@ -38,7 +56,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 /**
  * @brief initialize glfw window: set width, height, title and GLFW hints
  */
-void VulkanTriangle::initWindow() {
+void VulkanAppBase::initWindow() {
   glfwInit();
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -49,15 +67,21 @@ void VulkanTriangle::initWindow() {
   glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
-void VulkanTriangle::framebufferResizeCallback(GLFWwindow* window, int width , int height){
-  auto app = reinterpret_cast<VulkanTriangle*>(glfwGetWindowUserPointer(window));
+/**
+ * @brief check if frame buffer was resized
+ * @param window
+ * @param width
+ * @param height
+ */
+void VulkanAppBase::framebufferResizeCallback(GLFWwindow* window, int width , int height){
+  auto app = reinterpret_cast<VulkanAppBase*>(glfwGetWindowUserPointer(window));
   app->framebufferResized = true;
 }
 
 /**
  * @brief initialize Vulkan graphics device support
  */
-void VulkanTriangle::initVulkan() {
+void VulkanAppBase::initVulkan() {
   createInstance();
   setupDebugMessenger();
   createSurface();
@@ -73,7 +97,7 @@ void VulkanTriangle::initVulkan() {
   createSyncObjects();
 }
 
-void VulkanTriangle::mainLoop() {
+void VulkanAppBase::mainLoop() {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     drawFrame();
@@ -82,9 +106,10 @@ void VulkanTriangle::mainLoop() {
 }
 
 /**
- * @brief destroy device, surface, vulkan instance, window and terminate program
+ * @brief destroy device, surface, vulkan instance, window and
+ * terminate program
  */
-void VulkanTriangle::cleanup() {
+void VulkanAppBase::cleanup() {
   cleanupSwapChain();
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -94,24 +119,20 @@ void VulkanTriangle::cleanup() {
   }
 
   vkDestroyCommandPool(device, commandPool, nullptr);
-
   vkDestroyDevice(device, nullptr);
-
-  if (enableValidationLayers) {
+  if (enableValidationLayers)
     DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-  }
 
   vkDestroySurfaceKHR(instance, surface, nullptr);
   vkDestroyInstance(instance, nullptr);
-
   glfwDestroyWindow(window);
-
   glfwTerminate();
 }
+
 /**
  * @brief define Vulkan app info, create info, get extensions, enable validation layers and create instance
  */
-void VulkanTriangle::createInstance() {
+void VulkanAppBase::createInstance() {
   if (enableValidationLayers && !checkValidationLayerSupport()) {
     throw std::runtime_error("validation layers requested, but not available!");
   }
@@ -139,38 +160,44 @@ void VulkanTriangle::createInstance() {
 
     populateDebugMessengerCreateInfo(debugCreateInfo);
     createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
-  } else {
+  }
+  else {
     createInfo.enabledLayerCount = 0;
-
     createInfo.pNext = nullptr;
   }
 
-  if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+  if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
     throw std::runtime_error("failed to create instance!");
-  }
 }
+
 /**
  * @brief populate the fields of the passed in createInfo struct object
  * @param createInfo
  */
-void VulkanTriangle::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+void VulkanAppBase::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
   createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+  createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+  createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
   createInfo.pfnUserCallback = debugCallback;
 }
+
 /**
  * @brief enable validation layers if running in debug mode,
  *  define createInfo to create DebugUtilsMessenger
  */
-void VulkanTriangle::setupDebugMessenger() {
+void VulkanAppBase::setupDebugMessenger() {
   if (!enableValidationLayers) return;
 
   VkDebugUtilsMessengerCreateInfoEXT createInfo;
   populateDebugMessengerCreateInfo(createInfo);
 
-  if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+  if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr,
+                                   &debugMessenger) != VK_SUCCESS) {
     throw std::runtime_error("failed to set up debug messenger!");
   }
 }
@@ -178,15 +205,16 @@ void VulkanTriangle::setupDebugMessenger() {
 /**
  * @brief create GLFW window surface to render graphics
  */
-void VulkanTriangle::createSurface() {
-  if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+void VulkanAppBase::createSurface() {
+  if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
     throw std::runtime_error("failed to create window surface!");
-  }
 }
+
 /**
- * @brief enumerate and evaluate available physical devices against the requirements of this application
+ * @brief enumerate and evaluate available physical devices against the
+ *  requirements of this application
  */
-void VulkanTriangle::pickPhysicalDevice() {
+void VulkanAppBase::pickPhysicalDevice() {
   uint32_t deviceCount = 0;
   vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -197,9 +225,9 @@ void VulkanTriangle::pickPhysicalDevice() {
   std::vector<VkPhysicalDevice> devices(deviceCount);
   vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-  for (const auto& device : devices) {
-    if (isDeviceSuitable(device)) {
-      physicalDevice = device;
+  for (const auto&dev : devices) {
+    if (isDeviceSuitable(dev)) {
+      physicalDevice = dev;
       break;
     }
   }
@@ -208,12 +236,14 @@ void VulkanTriangle::pickPhysicalDevice() {
     throw std::runtime_error("failed to find a suitable GPU!");
   }
 }
+
 /**
- * @brief Assuming that the physical device is already initialized, create a logical device.
- *  define createInfos for each unique queueFamily and the logical device, enable validation
- *  layers for the logical device and finally create it.
+ * @brief Assuming that the physical device is already initialized,
+ *  create a logical device,
+ *  define createInfos for each unique queueFamily and the logical device,
+ *  enable validation layers for the logical device and finally create it.
  */
-void VulkanTriangle::createLogicalDevice() {
+void VulkanAppBase::createLogicalDevice() {
   QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -257,7 +287,10 @@ void VulkanTriangle::createLogicalDevice() {
   vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void VulkanTriangle::createSwapChain() {
+/**
+ * @brief create a queue for images to be presented
+ */
+void VulkanAppBase::createSwapChain() {
   SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
   VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -310,7 +343,12 @@ void VulkanTriangle::createSwapChain() {
   swapChainExtent = extent;
 }
 
-VkSurfaceFormatKHR VulkanTriangle::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+/**
+ * @brief select the swap surface format by specifying the color channel and type
+ * @param availableFormats
+ * @return
+ */
+VkSurfaceFormatKHR VulkanAppBase::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
   for (const auto& availableFormat : availableFormats) {
     if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
       return availableFormat;
@@ -320,7 +358,12 @@ VkSurfaceFormatKHR VulkanTriangle::chooseSwapSurfaceFormat(const std::vector<VkS
   return availableFormats[0];
 }
 
-VkPresentModeKHR VulkanTriangle::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+/**
+ * @brief select presentation mode for images
+ * @param availablePresentModes
+ * @return
+ */
+VkPresentModeKHR VulkanAppBase::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
   for (const auto& availablePresentMode : availablePresentModes) {
     if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
       return availablePresentMode;
@@ -330,7 +373,13 @@ VkPresentModeKHR VulkanTriangle::chooseSwapPresentMode(const std::vector<VkPrese
   return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VulkanTriangle::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+/**
+ * @brief select the resolution of the swap chain images and it's almost always
+ *  exactly equal to the resolution of the window that we're drawing to in pixels
+ * @param capabilities
+ * @return
+ */
+VkExtent2D VulkanAppBase::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
   if (capabilities.currentExtent.width != UINT32_MAX) {
     return capabilities.currentExtent;
   } else {
@@ -349,35 +398,41 @@ VkExtent2D VulkanTriangle::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capa
   }
 }
 
-SwapChainSupportDetails VulkanTriangle::querySwapChainSupport(VkPhysicalDevice device) {
+/**
+ * @brief get surface capabilities, physical device surface format, available
+ *  presentation modes and return them as a SwapChainSupportDetails object
+ * @param dev
+ * @return
+ */
+SwapChainSupportDetails VulkanAppBase::querySwapChainSupport(VkPhysicalDevice dev) {
   SwapChainSupportDetails details;
-
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(dev, surface, &details.capabilities);
 
   uint32_t formatCount;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+  vkGetPhysicalDeviceSurfaceFormatsKHR(dev, surface, &formatCount, nullptr);
 
   if (formatCount != 0) {
     details.formats.resize(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(dev, surface, &formatCount, details.formats.data());
   }
 
   uint32_t presentModeCount;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+  vkGetPhysicalDeviceSurfacePresentModesKHR(dev, surface, &presentModeCount, nullptr);
 
   if (presentModeCount != 0) {
     details.presentModes.resize(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(dev, surface, &presentModeCount, details.presentModes.data());
   }
 
   return details;
 }
+
 /**
  * @brief helper function to check whether a physical device is suitable for running this application or not.
  * @param device reference to the physical device for check
  * @return whether or not device is suitable
  */
-bool VulkanTriangle::isDeviceSuitable(VkPhysicalDevice device) {
+bool VulkanAppBase::isDeviceSuitable(VkPhysicalDevice device) {
   QueueFamilyIndices indices = findQueueFamilies(device);
 
   bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -391,7 +446,12 @@ bool VulkanTriangle::isDeviceSuitable(VkPhysicalDevice device) {
   return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
-bool VulkanTriangle::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+/**
+ * @brief check if the device supports extensions
+ * @param device
+ * @return
+ */
+bool VulkanAppBase::checkDeviceExtensionSupport(VkPhysicalDevice device) {
   uint32_t extensionCount;
   vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -406,13 +466,14 @@ bool VulkanTriangle::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
   return requiredExtensions.empty();
 }
+
 /**
- * @brief Given a physical device, this method finds queue families. For each queue family, its corresponding
- *  graphics family and present support are determined.
+ * @brief Given a physical device, this method finds queue families. For each queue
+ *  family, its corresponding graphics family and present support are determined.
  * @param device
  * @return
  */
-QueueFamilyIndices VulkanTriangle::findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices VulkanAppBase::findQueueFamilies(VkPhysicalDevice device) {
   QueueFamilyIndices indices;
 
   uint32_t queueFamilyCount = 0;
@@ -437,17 +498,15 @@ QueueFamilyIndices VulkanTriangle::findQueueFamilies(VkPhysicalDevice device) {
     if (indices.isComplete()) {
       break;
     }
-
     i++;
   }
-
   return indices;
 }
 
 /**
  * @return vector of required extensions
  */
-std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
+std::vector<const char*> VulkanAppBase::getRequiredExtensions() {
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -462,10 +521,10 @@ std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
 }
 
 /**
- * determine whether this machine supports validation layers
+ * @brief determine whether this machine supports validation layers
  * @return
  */
-bool VulkanTriangle::checkValidationLayerSupport() {
+bool VulkanAppBase::checkValidationLayerSupport() {
   uint32_t layerCount;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -491,10 +550,10 @@ bool VulkanTriangle::checkValidationLayerSupport() {
 }
 
 /**
- * creates a basic image view for every image in the swap chain
+ * @brief creates a basic image view for every image in the swap chain
  * so that we can use them as color targets
  */
-void VulkanTriangle::createImageViews() {
+void VulkanAppBase::createImageViews() {
   swapChainImageViews.resize(swapChainImages.size());
   for (size_t i = 0; i < swapChainImages.size(); ++i){
     VkImageViewCreateInfo createInfo{};
@@ -518,9 +577,9 @@ void VulkanTriangle::createImageViews() {
 }
 
 /**
- * Note: compilation and linking of spir-v bytecode happens here.
+ * @brief compilation and linking of spir-v bytecode happens here.
  */
-void VulkanTriangle::createGraphicsPipeline() {
+void VulkanAppBase::createGraphicsPipeline() {
   /// read spir-v bytecode and store them as a vector of bytes
   auto vertShaderCode = readFile("/home/anshil/workspace/HelloVulkan/src/shaders/vert.spv");
   auto fragShaderCode = readFile("/home/anshil/workspace/HelloVulkan/src/shaders/frag.spv");
@@ -639,7 +698,12 @@ void VulkanTriangle::createGraphicsPipeline() {
   vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-VkShaderModule VulkanTriangle::createShaderModule(const std::vector<char>& code) {
+/**
+ * @brief creates shader module from spir-v bytecode stored in a char vector
+ * @param code
+ * @return
+ */
+VkShaderModule VulkanAppBase::createShaderModule(const std::vector<char>& code) {
   // setup a createInfo struct object for the shader module
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -652,7 +716,12 @@ VkShaderModule VulkanTriangle::createShaderModule(const std::vector<char>& code)
     throw std::runtime_error("Failed to create shader module!");
   return shaderModule;
 }
-void VulkanTriangle::createRenderPass() {
+
+/**
+ * @brief create render pass by plugging in attachment description for colors,
+ *  their reference, subpass description, and render pass create info
+ */
+void VulkanAppBase::createRenderPass() {
   VkAttachmentDescription colorAttachment{};
   colorAttachment.format = swapChainImageFormat;
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -693,7 +762,11 @@ void VulkanTriangle::createRenderPass() {
     throw std::runtime_error("failed to create render pass!");
   }
 }
-void VulkanTriangle::createFramebuffers() {
+
+/**
+ * @brief create swap chain frame buffers
+ */
+void VulkanAppBase::createFramebuffers() {
   swapChainFramebuffers.resize(swapChainImageViews.size());
   for (size_t i = 0; i < swapChainImageViews.size(); i++) {
     VkImageView attachments[] = {
@@ -714,7 +787,12 @@ void VulkanTriangle::createFramebuffers() {
     }
   }
 }
-void VulkanTriangle::createCommandPool() {
+
+/**
+ * @brief create a command pool to manage the memory that is used to store the buffers
+ *  and command buffers are allocated from them
+ */
+void VulkanAppBase::createCommandPool() {
   QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
   VkCommandPoolCreateInfo poolInfo{};
@@ -726,7 +804,11 @@ void VulkanTriangle::createCommandPool() {
     throw std::runtime_error("failed to create command pool!");
   }
 }
-void VulkanTriangle::createCommandBuffers() {
+
+/**
+ * @brief allocate command buffers and recording drawing commands in them
+ */
+void VulkanAppBase::createCommandBuffers() {
   commandBuffers.resize(swapChainFramebuffers.size());
 
   VkCommandBufferAllocateInfo allocInfo{};
@@ -775,7 +857,7 @@ void VulkanTriangle::createCommandBuffers() {
 /**
  * @brief acquire an image from the swap chain
  */
-void VulkanTriangle::drawFrame() {
+void VulkanAppBase::drawFrame() {
   vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
   uint32_t imageIndex;
@@ -843,7 +925,7 @@ void VulkanTriangle::drawFrame() {
  * @brief create the image available semaphores, render finished semaphores and fences
  *  for GPU-GPU and CPU-GPU synchronization
  */
-void VulkanTriangle::createSyncObjects() {
+void VulkanAppBase::createSyncObjects() {
   imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
   renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
   inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -866,7 +948,10 @@ void VulkanTriangle::createSyncObjects() {
   }
 }
 
-void VulkanTriangle::recreateSwapChain(){
+/**
+ * @brief recreate the swap chain for cases of window resizing or reloads
+ */
+void VulkanAppBase::recreateSwapChain(){
   int width = 0, height = 0;
   glfwGetFramebufferSize(window, &width, &height);
   while (width == 0 or height == 0){
@@ -884,9 +969,13 @@ void VulkanTriangle::recreateSwapChain(){
   createCommandBuffers();
 }
 
-void VulkanTriangle::cleanupSwapChain(){
-  for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
-    vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+/**
+ * @brief destroy frame buffers, free command buffers, graphics pipeline, pipeline layout,
+ *  render pass, swap chain image views, and swap chain itself
+ */
+void VulkanAppBase::cleanupSwapChain(){
+  for (auto & swapChainFramebuffer : swapChainFramebuffers) {
+    vkDestroyFramebuffer(device, swapChainFramebuffer, nullptr);
   }
 
   vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
@@ -895,8 +984,8 @@ void VulkanTriangle::cleanupSwapChain(){
   vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
   vkDestroyRenderPass(device, renderPass, nullptr);
 
-  for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-    vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+  for (auto & swapChainImageView : swapChainImageViews) {
+    vkDestroyImageView(device, swapChainImageView, nullptr);
   }
 
   vkDestroySwapchainKHR(device, swapChain, nullptr);
