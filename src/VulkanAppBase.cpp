@@ -3,6 +3,7 @@
 //
 
 #include "VulkanAppBase.h"
+#include "Shader.h"
 #include <fstream>
 
 /**
@@ -989,6 +990,12 @@ void VulkanAppBase::cleanupSwapChain(){
   }
 
   vkDestroySwapchainKHR(device, swapChain, nullptr);
+}
+void VulkanAppBase::run() {
+  initWindow();
+  initVulkan();
+  mainLoop();
+  cleanup();
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {

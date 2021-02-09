@@ -75,12 +75,7 @@ struct SwapChainSupportDetails {
 
 class VulkanAppBase {
 public:
-  void run() {
-    initWindow();
-    initVulkan();
-    mainLoop();
-    cleanup();
-  }
+  void run();
 
 private:
   GLFWwindow *window{};
