@@ -566,9 +566,12 @@ void VulkanAppBase::createGraphicsPipeline() {
   auto vertShaderCode = readFile("/home/anshil/workspace/HelloVulkan/src/shaders/vert.spv");
   auto fragShaderCode = readFile("/home/anshil/workspace/HelloVulkan/src/shaders/frag.spv");
 
+  std::vector<char> vertShaderVec = std::vector<char>(vertShaderCode.begin(), vertShaderCode.end());
+  std::vector<char> fragShaderVec = std::vector<char>(fragShaderCode.begin(), fragShaderCode.end());
+
   /// create shader modules here
-  VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-  VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+  VkShaderModule vertShaderModule = createShaderModule(vertShaderVec);
+  VkShaderModule fragShaderModule = createShaderModule(fragShaderVec);
 
   /// scheduling shader execution in the graphics pipeline
   // vertex shader

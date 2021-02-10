@@ -11,12 +11,13 @@
  * @param filename path to file
  * @return vector of bytes
  */
-static std::vector<char> readFile(const std::string& filename);
+std::string readFile(const std::string& filename);
 
 class Shader{
 private:
   std::string shaderFilepath;
   std::vector<char> shaderByteCode;
+  GLuint type = GL_SHADER;  // type of shader module
 
 public:
   Shader() = default;
@@ -25,11 +26,12 @@ public:
   /**
    * @brief create a Shader object and optionally compile it to bytecode,
    *    compiled bytecode will be stored in shaderByteCode.
+   * @param shaderTy
    * @param shaderSrc
    * @param compileSrc
    */
-  explicit Shader(const char* shaderSrc, bool compileSrc = true)
-      : shaderFilepath(shaderSrc){
+   Shader(GLuint shaderTy, const char* shaderSrc, bool compileSrc = true)
+      : type(shaderTy), shaderFilepath(shaderSrc){
     if (compileSrc) compile();
   }
 

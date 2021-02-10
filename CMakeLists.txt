@@ -7,6 +7,7 @@ set(CMAKE_CXX_COMPILER clang++)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED FATAL_ERROR)
+find_package(GLEW REQUIRED)
 
 include_directories(include)
 add_executable(HelloVulkan 
@@ -14,4 +15,4 @@ add_executable(HelloVulkan
   src/VulkanAppBase.cpp
   src/Shader.cpp)
 
-target_link_libraries(HelloVulkan glfw OpenGL::GL vulkan)
+target_link_libraries(HelloVulkan glfw OpenGL::GL vulkan GLEW::GLEW)
