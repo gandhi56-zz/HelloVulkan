@@ -37,6 +37,7 @@ VkShaderModule Shader::getShaderModule(VkDevice &device, const VkAllocationCallb
     throw std::runtime_error("Failed to create shader module!");
   return mod;
 }
+
 std::vector<char> Shader::getShaderByteCode() {
   if (shaderByteCode.empty())
     compile();
@@ -48,7 +49,8 @@ std::vector<char> Shader::getShaderByteCode() {
  *  shaderByteCode as a vector of bytes
  */
 void Shader::compile() {
-  GLuint shader = glCreateShader(type);
+  GLuint shader = glCreateShader(type); // FIXME: segmentation fault here,
+                                        //  no such function is implemented
   if (shader == 0)
     throw std::runtime_error("Failed to create shader!");
   auto shaderCode = readFile(shaderFilepath);

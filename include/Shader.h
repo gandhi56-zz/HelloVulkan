@@ -21,7 +21,7 @@ private:
 
 public:
   Shader() = default;
-  ~Shader() = delete;
+  ~Shader() = default;
 
   /**
    * @brief create a Shader object and optionally compile it to bytecode,
