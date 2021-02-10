@@ -4,6 +4,7 @@
 #include "VulkanAppBase.h"
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 /**
@@ -35,6 +36,9 @@ public:
     if (compileSrc) compile();
   }
 
+  Shader(GLuint shaderTy, const char* shaderSrc, std::vector<char>  bytecode)
+      : type(shaderTy), shaderFilepath(shaderSrc), shaderByteCode(std::move(bytecode)) {}
+
   /**
    * @brief returns bytecode, if shader source code was not yet compiled, it
    *    will be done so.
@@ -50,10 +54,19 @@ public:
    * @return
    */
   VkShaderModule getShaderModule(VkDevice& device, const VkAllocationCallbacks* pAllocator);
+
+  /**
+   * @brief read in shader bytecode directly, overwrites previously stored bytecode
+   * @param filepath, path to bytecode
+   */
+  void readShaderByteCode(const char* filepath){
+    std::string bytecodeStr = readFile(filepath);
+    shaderByteCode = std::vector<char>(bytecodeStr.begin(), bytecodeStr.end());
+  }
+
 private:
 
   void compile();
-
 };
 
 

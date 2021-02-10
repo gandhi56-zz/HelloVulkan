@@ -562,18 +562,19 @@ void VulkanAppBase::createImageViews() {
  * @brief compilation and linking of spir-v bytecode happens here.
  */
 void VulkanAppBase::createGraphicsPipeline() {
+  Shader vertShader(GL_VERTEX_SHADER,
+                    "/home/anshil/workspace/HelloVulkan/src/shaders/shader_base.vert", false);
+  Shader fragShader(GL_FRAGMENT_SHADER,
+                    "/home/anshil/workspace/HelloVulkan/src/shaders/shader_base.frag", false);
+
   /// read spir-v bytecode and store them as a vector of bytes
-  auto vertShaderCode = readFile("/home/anshil/workspace/HelloVulkan/src/shaders/vert.spv");
-  auto fragShaderCode = readFile("/home/anshil/workspace/HelloVulkan/src/shaders/frag.spv");
-
-  std::vector<char> vertShaderVec = std::vector<char>(vertShaderCode.begin(), vertShaderCode.end());
-  std::vector<char> fragShaderVec = std::vector<char>(fragShaderCode.begin(), fragShaderCode.end());
-
-  Shader vertexShader(GL_VERTEX_SHADER, "/home/anshil/workspace/HelloVulkan/src/shaders/shader_base.vert");
+  vertShader.readShaderByteCode("/home/anshil/workspace/HelloVulkan/src/shaders/vert.spv");
+  fragShader.readShaderByteCode("/home/anshil/workspace/HelloVulkan/src/shaders/frag.spv");
 
   /// create shader modules here
-  VkShaderModule vertShaderModule = vertexShader.getShaderModule(device, nullptr);
-  VkShaderModule fragShaderModule = createShaderModule(fragShaderVec);
+  VkShaderModule vertShaderModule = createShaderModule(vertShader.getShaderByteCode());
+  VkShaderModule fragShaderModule = createShaderModule(fragShader.getShaderByteCode());
+
 
   /// scheduling shader execution in the graphics pipeline
   // vertex shader

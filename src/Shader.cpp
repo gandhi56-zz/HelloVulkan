@@ -51,6 +51,8 @@ std::vector<char> Shader::getShaderByteCode() {
 void Shader::compile() {
   GLuint shader = glCreateShader(type); // FIXME: segmentation fault here,
                                         //  no such function is implemented
+
+  glCreateProgram();
   if (shader == 0)
     throw std::runtime_error("Failed to create shader!");
   auto shaderCode = readFile(shaderFilepath);
